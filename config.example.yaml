@@ -1,0 +1,26 @@
+# Race Engineer — configuración
+# Copiar a config.yaml y ajustar valores.
+
+llm:
+  # Endpoint OpenAI-compatible (Qwen en RunPod)
+  base_url: "https://nhw5l227x4kb8z-8000.proxy.runpod.net/v1"
+  model: "qwen3.8-27b"
+  # API key: se lee de la variable de entorno RACE_ENGINEER_API_KEY
+  # o de este campo (la env var tiene prioridad)
+  api_key: ""
+  max_tokens: 1024
+  temperature: 0.4
+
+collector:
+  # Frecuencia de muestreo de la shared memory (Hz)
+  poll_rate_hz: 10
+  # Cuántas vueltas de histórico mantener en memoria
+  lap_history_size: 50
+  # Número de rivales directos a seguir (por delante + por detrás)
+  rivals_count: 5
+
+agent:
+  # Modo de interacción: "cli" (terminal) o "auto" (briefing periódico)
+  mode: "cli"
+  # En modo auto: cada cuántas vueltas generar briefing
+  auto_briefing_interval_laps: 5
