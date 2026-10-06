@@ -121,6 +121,13 @@ You'll be prompted for the PIN on first connection.
 | `RACE_ENGINEER_PIN` | _(empty)_ | PIN for OAuth consent page (empty = no PIN) |
 | `RACE_ENGINEER_PORT` | `8000` | Local HTTP port |
 
+## System prompt
+
+The file [`PROMPT.md`](PROMPT.md) contains a system prompt designed to make
+ChatGPT (or any LLM) behave like a real race engineer over voice radio: brief,
+action-first, no filler. Paste it into ChatGPT's custom instructions or system
+prompt before starting a race session.
+
 ## Console output
 
 The tracker logs race events in real time:
