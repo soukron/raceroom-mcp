@@ -7,7 +7,7 @@ dependencies = [
     "openai>=1.30",
     "pydantic>=2.0",
     "pyyaml>=6.0",
-    "mcp[cli]>=1.0",
+    "mcp[cli]>=2.0",
 ]
 
 [project.optional-dependencies]
@@ -17,10 +17,11 @@ tts = ["edge-tts"]
 [project.scripts]
 race-engineer-mcp = "race_engineer.mcp_server.server:main"
 race-engineer-agent = "race_engineer.agent.cli:main"
+race-engineer-server = "race_engineer.mcp_server.server:main"
 
 [build-system]
 requires = ["setuptools>=68"]
-build-backend = "setuptools.backends._legacy:_Backend"
+build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["src"]

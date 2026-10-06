@@ -42,10 +42,15 @@ def _build_context(tracker: RaceTracker, focus: str = "general") -> str:
 
     if state.session:
         s = state.session
+        total = s.laps_total_estimate if s.laps_total_estimate > 0 else s.laps_total
+        total_str = f"{total}{'~' if s.time_based and s.laps_total_estimate > 0 else ''}" if total > 0 else "?"
+        remaining = f", quedan {s.laps_remaining}" if s.laps_remaining > 0 else ""
         parts.append(
-            f"Sesión: {s.track_name} ({s.layout_name}), {s.session_type.name}, "
-            f"vuelta {s.current_lap}/{s.laps_total if s.laps_total > 0 else '?'}, "
+            f"Sesion: {s.track_name} ({s.layout_name}), {s.session_type.name}, "
+            f"P{s.player_position}, tu vuelta {s.player_lap}/{total_str}"
+            f" (lider v{s.leader_lap}){remaining}, "
             f"{s.num_cars} coches"
+            f"{', por tiempo' if s.time_based else ''}"
         )
 
     if focus in ("general", "tires") and state.current_tires:
@@ -79,11 +84,15 @@ def _build_context(tracker: RaceTracker, focus: str = "general") -> str:
             key=lambda r: abs(r.laps[-1].gap_to_player),
         )[:5]:
             lat = rival.laps[-1]
+            status = lat.finish_status.name if lat.finish_status.value > 0 else ""
             parts.append(
-                f"Rival {lat.info.name} (#{rival.info.car_number}) P{lat.position}: "
+                f"Rival {lat.info.name} (#{rival.info.car_number}) P{lat.position} "
+                f"v{lat.current_lap} [{lat.lap_distance_fraction:.0%}]: "
                 f"gap={lat.gap_to_player:+.2f}s, ritmo={rival.recent_pace:.3f}s, "
-                f"paradas={rival.total_pitstops}, pits={'SÍ' if lat.in_pitlane else 'no'}, "
+                f"tendencia={rival.pace_trend}, paradas={rival.total_pitstops}, "
+                f"pits={'SÍ' if lat.in_pitlane else 'no'}, "
                 f"neumaticos={lat.tire_front.name}/{lat.tire_rear.name}"
+                f"{' ' + status if status else ''}"
             )
 
     if focus in ("general", "laps"):
@@ -157,29 +166,29 @@ def main() -> None:
     thread = threading.Thread(target=collector_loop, daemon=True)
     thread.start()
 
-    print("╔═══════════════════════════════════════╗")
-    print("║     🏎️  RACE ENGINEER v0.1.0  🏎️      ║")
-    print("║  Ingeniero de pista IA para RaceRoom  ║")
-    print("╠═══════════════════════════════════════╣")
-    print("║  /tires  — neumáticos                 ║")
-    print("║  /fuel   — combustible                ║")
-    print("║  /pit    — estrategia de pit           ║")
-    print("║  /rivals — rivales directos            ║")
-    print("║  /race   — resumen general             ║")
-    print("║  /laps   — histórico de vueltas        ║")
-    print("║  /help   — todos los comandos          ║")
-    print("║  /quit   — salir                       ║")
-    print("║                                        ║")
-    print("║  O escribe cualquier pregunta libre.   ║")
-    print("╚═══════════════════════════════════════╝")
+    print("+---------------------------------------+")
+    print("|     RACE ENGINEER v0.1.0              |")
+    print("|  Ingeniero de pista IA para RaceRoom  |")
+    print("+---------------------------------------+")
+    print("|  /tires  - neumaticos                 |")
+    print("|  /fuel   - combustible                |")
+    print("|  /pit    - estrategia de pit           |")
+    print("|  /rivals - rivales directos            |")
+    print("|  /race   - resumen general             |")
+    print("|  /laps   - historico de vueltas        |")
+    print("|  /help   - todos los comandos          |")
+    print("|  /quit   - salir                       |")
+    print("|                                        |")
+    print("|  O escribe cualquier pregunta libre.   |")
+    print("+---------------------------------------+")
     print()
 
     if not collector_running.wait(timeout=5):
-        print("⏳ Esperando a que RaceRoom arranque... (el CLI ya funciona)")
+        print("Esperando a que RaceRoom arranque... (el CLI ya funciona)")
 
     while True:
         try:
-            user_input = input("\n🏁 > ").strip()
+            user_input = input("\n>> ").strip()
         except (EOFError, KeyboardInterrupt):
             break
 
@@ -194,7 +203,7 @@ def main() -> None:
             continue
         elif user_input == "/clear":
             llm.clear_history()
-            print("🗑️  Historial limpiado.")
+            print("Historial limpiado.")
             continue
 
         if user_input.startswith("/"):
@@ -206,13 +215,13 @@ def main() -> None:
 
         context = _build_context(tracker, focus)
 
-        print("📡 Consultando telemetría + LLM...")
+        print("Consultando telemetria + LLM...")
         response = llm.ask(question, context)
-        print(f"\n📻 Ingeniero:\n{response}")
+        print(f"\nIngeniero:\n{response}")
 
     collector_running.clear()
     reader.close()
-    print("\n👋 Sesión terminada.")
+    print("\nSesion terminada.")
 
 
 if __name__ == "__main__":

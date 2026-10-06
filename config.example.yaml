@@ -1,9 +1,9 @@
-# Race Engineer — configuración
+# Race Engineer — configuracion
 # Copiar a config.yaml y ajustar valores.
 
 llm:
-  # Endpoint OpenAI-compatible (Qwen en RunPod)
-  base_url: "https://nhw5l227x4kb8z-8000.proxy.runpod.net/v1"
+  # Endpoint OpenAI-compatible (Qwen en Nodeclub)
+  base_url: "https://api.nodeclub.ai/v1"
   model: "qwen3.8-27b"
   # API key: se lee de la variable de entorno RACE_ENGINEER_API_KEY
   # o de este campo (la env var tiene prioridad)
@@ -14,13 +14,24 @@ llm:
 collector:
   # Frecuencia de muestreo de la shared memory (Hz)
   poll_rate_hz: 10
-  # Cuántas vueltas de histórico mantener en memoria
+  # Cuantas vueltas de historico mantener en memoria
   lap_history_size: 50
-  # Número de rivales directos a seguir (por delante + por detrás)
+  # Numero de rivales directos a seguir (por delante + por detras)
   rivals_count: 5
 
 agent:
-  # Modo de interacción: "cli" (terminal) o "auto" (briefing periódico)
+  # Modo de interaccion: "cli" (terminal) o "auto" (briefing periodico)
   mode: "cli"
-  # En modo auto: cada cuántas vueltas generar briefing
+  # En modo auto: cada cuantas vueltas generar briefing
   auto_briefing_interval_laps: 5
+
+# ── MCP Server HTTP (para ChatGPT) ──────────────────────────────────
+# Estas opciones se configuran por variable de entorno, no por YAML:
+#
+# RACE_ENGINEER_URL   URL publica del tunnel
+#                     (ej. https://xxx.trycloudflare.com)
+#
+# RACE_ENGINEER_PIN   PIN numerico para la pagina de consentimiento OAuth
+#                     (vacio = sin PIN, cualquiera con la URL puede autorizar)
+#
+# RACE_ENGINEER_PORT  Puerto local del servidor HTTP (default 8000)

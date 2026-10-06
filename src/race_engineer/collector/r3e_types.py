@@ -1,9 +1,6 @@
 """Definiciones ctypes del shared memory de RaceRoom ($R3E).
 
-Traducción directa de r3e.h (API v2.16) a ctypes para lectura desde Python.
-Solo se incluyen los campos que usa el race engineer; el struct completo
-mantiene el layout correcto para que los offsets cuadren.
-
+Traducción directa de r3e.h API v3.5 a ctypes.
 Referencia: https://github.com/sector3studios/r3e-api/blob/master/sample-c/src/r3e.h
 """
 
@@ -15,7 +12,7 @@ R3E_SHARED_MEMORY_NAME = "$R3E"
 R3E_NUM_DRIVERS_MAX = 128
 R3E_TIRE_INDEX_MAX = 4
 R3E_TIRE_TEMP_INDEX_MAX = 3
-R3E_PIT_MENU_MAX = 11
+R3E_PIT_MENU_MAX = 12
 
 
 # ── Tipos base ───────────────────────────────────────────────────────
@@ -40,11 +37,12 @@ class SectorStarts(ctypes.Structure):
     _fields_ = [("sector1", ctypes.c_float), ("sector2", ctypes.c_float), ("sector3", ctypes.c_float)]
 
 
-# ── Player data (alta precisión) ─────────────────────────────────────
+# ── Player data (alta precisión) — v3.5 ──────────────────────────────
 
 class PlayerData(ctypes.Structure):
     _pack_ = 1
     _fields_ = [
+        ("user_id", ctypes.c_int32),  # NEW in v3
         ("game_simulation_ticks", ctypes.c_int32),
         ("game_simulation_time", ctypes.c_double),
         ("position", Vec3F64),
@@ -79,6 +77,8 @@ class PlayerData(ctypes.Structure):
         ("third_spring_suspension_deflection_rear", ctypes.c_double),
         ("third_spring_suspension_velocity_rear", ctypes.c_double),
         ("unused1", ctypes.c_double),
+        ("unused2", ctypes.c_double),  # NEW in v3
+        ("unused3", ctypes.c_double),  # NEW in v3
     ]
 
 
@@ -116,16 +116,16 @@ class CarDamage(ctypes.Structure):
     ]
 
 
-# ── Cut track penalties ───────────────────────────────────────────────
+# ── Cut track penalties — v3.5: float32, not int32 ────────────────────
 
 class CutTrackPenalties(ctypes.Structure):
     _pack_ = 1
     _fields_ = [
-        ("drive_through", ctypes.c_int32),
-        ("stop_and_go", ctypes.c_int32),
-        ("pit_stop", ctypes.c_int32),
-        ("time_deduction", ctypes.c_int32),
-        ("slow_down", ctypes.c_int32),
+        ("drive_through", ctypes.c_float),
+        ("stop_and_go", ctypes.c_float),
+        ("pit_stop", ctypes.c_float),
+        ("time_deduction", ctypes.c_float),
+        ("slow_down", ctypes.c_float),
     ]
 
 
@@ -189,7 +189,7 @@ class AidSettings(ctypes.Structure):
     ]
 
 
-# ── Driver info (por piloto) ─────────────────────────────────────────
+# ── Driver info (por piloto) — v3.5 ──────────────────────────────────
 
 class DriverInfo(ctypes.Structure):
     _pack_ = 1
@@ -207,6 +207,10 @@ class DriverInfo(ctypes.Structure):
         ("engine_type", ctypes.c_int32),
         ("car_width", ctypes.c_float),
         ("car_length", ctypes.c_float),
+        ("rating", ctypes.c_float),       # NEW in v3
+        ("reputation", ctypes.c_float),    # NEW in v3
+        ("unused1", ctypes.c_float),       # NEW in v3
+        ("unused2", ctypes.c_float),       # NEW in v3
     ]
 
     def get_name(self) -> str:
@@ -214,7 +218,7 @@ class DriverInfo(ctypes.Structure):
         return raw.split(b"\x00", 1)[0].decode("utf-8", errors="replace")
 
 
-# ── Driver data (por cada coche en pista) ─────────────────────────────
+# ── Driver data (por cada coche en pista) — v3.5 ──────────────────────
 
 class DriverData(ctypes.Structure):
     _pack_ = 1
@@ -224,6 +228,7 @@ class DriverData(ctypes.Structure):
         ("place", ctypes.c_int32),
         ("place_class", ctypes.c_int32),
         ("lap_distance", ctypes.c_float),
+        ("lap_distance_fraction", ctypes.c_float),  # NEW in v3
         ("position", Vec3F32),
         ("track_sector", ctypes.c_int32),
         ("completed_laps", ctypes.c_int32),
@@ -247,22 +252,20 @@ class DriverData(ctypes.Structure):
         ("aid_penalty_weight", ctypes.c_float),
         ("drs_state", ctypes.c_int32),
         ("ptp_state", ctypes.c_int32),
+        ("virtual_energy", ctypes.c_float),  # NEW in v3
         ("penalty_type", ctypes.c_int32),
         ("penalty_reason", ctypes.c_int32),
         ("engine_state", ctypes.c_int32),
         ("orientation", Vec3F32),
+        ("unused1", ctypes.c_float),  # NEW in v3
+        ("unused2", ctypes.c_float),  # NEW in v3
+        ("unused3", ctypes.c_float),  # NEW in v3
     ]
 
 
-# ── Struct principal: r3e_shared ──────────────────────────────────────
+# ── Struct principal: r3e_shared — v3.5 ───────────────────────────────
 
 class R3EShared(ctypes.Structure):
-    """Estructura raíz del shared memory $R3E.
-
-    Layout idéntico al r3e_shared de r3e.h v2.16.
-    Todos los campos packed sin padding.
-    """
-
     _pack_ = 1
     _fields_ = [
         # Version
@@ -271,12 +274,13 @@ class R3EShared(ctypes.Structure):
         ("all_drivers_offset", ctypes.c_int32),
         ("driver_data_size", ctypes.c_int32),
 
-        # Game state
+        # Game state — v3.5
+        ("game_mode", ctypes.c_int32),           # NEW in v3
         ("game_paused", ctypes.c_int32),
         ("game_in_menus", ctypes.c_int32),
         ("game_in_replay", ctypes.c_int32),
         ("game_using_vr", ctypes.c_int32),
-        ("game_unused1", ctypes.c_int32),
+        ("game_player_in_garage", ctypes.c_int32),  # NEW in v3
 
         # High detail player data
         ("player", PlayerData),
@@ -303,6 +307,7 @@ class R3EShared(ctypes.Structure):
         ("session_time_duration", ctypes.c_float),
         ("session_time_remaining", ctypes.c_float),
         ("max_incident_points", ctypes.c_int32),
+        ("event_unused1", ctypes.c_float),         # NEW in v3
         ("event_unused2", ctypes.c_float),
 
         # Pit
@@ -352,8 +357,10 @@ class R3EShared(ctypes.Structure):
         ("best_individual_sector_time_leader_class", ctypes.c_float * 3),
         ("incident_points", ctypes.c_int32),
         ("lap_valid_state", ctypes.c_int32),
+        ("prev_lap_valid", ctypes.c_int32),        # NEW in v3
+        ("discharge_rate", ctypes.c_float),         # NEW in v3
+        ("brake_regen", ctypes.c_float),            # NEW in v3
         ("score_unused1", ctypes.c_float),
-        ("score_unused2", ctypes.c_float),
 
         # Vehicle information
         ("vehicle_info", DriverInfo),
@@ -374,7 +381,10 @@ class R3EShared(ctypes.Structure):
         ("fuel_left", ctypes.c_float),
         ("fuel_capacity", ctypes.c_float),
         ("fuel_per_lap", ctypes.c_float),
-        ("engine_water_temp", ctypes.c_float),
+        ("virtual_energy_left", ctypes.c_float),     # NEW in v3
+        ("virtual_energy_capacity", ctypes.c_float),  # NEW in v3
+        ("virtual_energy_per_lap", ctypes.c_float),   # NEW in v3
+        ("engine_temp", ctypes.c_float),              # renamed from engine_water_temp
         ("engine_oil_temp", ctypes.c_float),
         ("fuel_pressure", ctypes.c_float),
         ("engine_oil_pressure", ctypes.c_float),
@@ -399,7 +409,7 @@ class R3EShared(ctypes.Structure):
         ("water_left", ctypes.c_float),
         ("abs_setting", ctypes.c_int32),
         ("headlights", ctypes.c_int32),
-        ("vehicle_unused1", ctypes.c_float),
+        ("steer_wheel_max_rotation", ctypes.c_int32),  # NEW in v3
 
         # Tires
         ("tire_type", ctypes.c_int32),
